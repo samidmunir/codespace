@@ -2,8 +2,10 @@ public class Dynamic_Array {
     private int[] main;
     private int pointer = -1;
     private int capacity;
+    private int used = 0;
     private int available;
     private int BYTES_PER_ELEMENT = 4;
+
     public Dynamic_Array(int initial_capacity) {
         System.out.println("\nDynamic_Array.Dynamic_Array() called...");
         try {
@@ -14,7 +16,8 @@ public class Dynamic_Array {
             }
             capacity = initial_capacity;
             main = new int[capacity];
-            available = capacity * BYTES_PER_ELEMENT;
+            used = 0 * BYTES_PER_ELEMENT;
+            available = (capacity - used) * BYTES_PER_ELEMENT;
         } catch (Exception e) {
             System.out.println("An error occurred: " + e.getMessage());
         }
@@ -25,12 +28,13 @@ public class Dynamic_Array {
     private void print_data_structure_stats() {
         System.out.println("\t\tpointer: " + pointer);
         System.out.println("\t\tcapacity: " + capacity);
-        System.out.println("\t\tavailable: " + available + " bytes");
+        System.out.println("\t\tused: " + (used * BYTES_PER_ELEMENT) + " bytes");
+        System.out.println("\t\tavailable: " + (available * BYTES_PER_ELEMENT) + " bytes / " + (capacity * BYTES_PER_ELEMENT) + " bytes");
     }
 
     private void print_data_structure_dynamic_array() {
         System.out.println("main[]:");
-        if (main == null || capacity == 0 || main.length == 0) {
+        if (is_null() || is_empty()) {
             System.out.println("\tEMPTY ARRAY main[]: []");
             print_data_structure_stats();
             return;
@@ -55,7 +59,8 @@ public class Dynamic_Array {
         if (main != null && pointer == -1) {
             return true;
         } else {
-            return false;}
+            return false;
+        }
     }
 
     private boolean is_full() {
@@ -64,5 +69,42 @@ public class Dynamic_Array {
         } else {
             return false;
         }
+    }
+
+    /*
+     * function insert_head(int data):
+     * - CASE 1: inserting in empty array.
+     * - CASE 2: inserting in non-empty array with one element (one shift to the right).
+     * - CASE 3: inserting in non-empty array with more than one element (shift to the right n times).
+     * - CASE 4: array is at maximum capacity... resizing needed.
+     */
+    public void insert_head(int data) {
+        System.out.println("\nDynamic_Array.insert_head(" + data + ") called...");
+        if (is_null()) {
+            System.out.println("\tERROR: cannot insert into null dynamic array.");
+            print_data_structure_dynamic_array();
+            return;
+        } else if (is_full()) {
+            System.out.println("\tERROR: cannot insert into full capacity dynamic array.");
+            print_data_structure_dynamic_array();
+            return;
+        } else {
+            if (is_empty()) {
+                pointer++;
+                main[pointer] = data;
+                used++;
+                available = capacity - used;
+            } else if (!is_empty() && !is_full()) {
+                pointer++;
+                for (int i = pointer; i > 0; i--) {
+                    main[i] = main[i - 1];
+                }
+                main[0] = data;                
+                used++;
+                available = capacity - used;
+            }
+        }
+        System.out.println("\tSuccessfully inserted " + data + " at head of the dynamic array.");
+        print_data_structure_dynamic_array();
     }
 }
