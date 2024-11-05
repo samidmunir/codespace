@@ -9,6 +9,8 @@ public class App {
         d_array.insert_head(11);
         d_array.insert_head(64);
         d_array.insert_head(9);
-        d_array.insert_head(9); // INSERTION ERROR (array at full-capacity)
+        d_array.insert_head(35); // resize required.
+        d_array.insert_head(-8);
+        d_array.insert_head(73); // resize required.
     }
 }

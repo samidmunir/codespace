@@ -84,10 +84,6 @@ public class Dynamic_Array {
             System.out.println("\tERROR: cannot insert into null dynamic array.");
             print_data_structure_dynamic_array();
             return;
-        } else if (is_full()) {
-            System.out.println("\tERROR: cannot insert into full capacity dynamic array.");
-            print_data_structure_dynamic_array();
-            return;
         } else {
             if (is_empty()) {
                 pointer++;
@@ -100,6 +96,19 @@ public class Dynamic_Array {
                     main[i] = main[i - 1];
                 }
                 main[0] = data;                
+                used++;
+                available = capacity - used;
+            } else {
+                pointer++;
+                int new_capacity = (capacity / 2) + capacity;
+                System.out.println("\tResizing dynamic array[" + capacity + "] -> [" + new_capacity + "]");
+                int[] new_main = new int[new_capacity];
+                for (int i = 0; i < pointer; i++) {
+                    new_main[i + 1] = main[i];
+                }
+                new_main[0] = data;
+                main = new_main;
+                capacity = new_capacity;
                 used++;
                 available = capacity - used;
             }
