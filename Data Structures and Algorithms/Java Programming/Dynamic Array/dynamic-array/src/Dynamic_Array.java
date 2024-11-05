@@ -71,13 +71,6 @@ public class Dynamic_Array {
         }
     }
 
-    /*
-     * function insert_head(int data):
-     * - CASE 1: inserting in empty array.
-     * - CASE 2: inserting in non-empty array with one element (one shift to the right).
-     * - CASE 3: inserting in non-empty array with more than one element (shift to the right n times).
-     * - CASE 4: array is at maximum capacity... resizing needed.
-     */
     public void insert_head(int data) {
         System.out.println("\nDynamic_Array.insert_head(" + data + ") called...");
         if (is_null()) {

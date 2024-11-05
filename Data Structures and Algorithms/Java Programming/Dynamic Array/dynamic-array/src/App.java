@@ -4,7 +4,14 @@ public class App {
         System.out.println("Data Structures & Algorithms");
         System.out.println("-----------------------------------\n");
 
+        /*
+         * Testing Dynamic_Array object initialization.
+         */
         Dynamic_Array d_array = new Dynamic_Array(4);
+
+        /*
+         * Testing function insert_head()
+         */
         d_array.insert_head(2);
         d_array.insert_head(11);
         d_array.insert_head(64);
