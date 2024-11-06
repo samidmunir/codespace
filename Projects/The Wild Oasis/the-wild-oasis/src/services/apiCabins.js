@@ -1,6 +1,6 @@
 import supabase from "./supabase";
 
-export async function getCabins() {
+export default async function getCabins() {
     let {data, error} = await supabase
     .from('cabins')
     .select('*')
