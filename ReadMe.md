@@ -9,3 +9,4 @@ Sami Munir | sami.munir2001@gmail.com
 26. Remove Duplicates from Sorted Array
 ## Projects
 ### the-wild-oasis
+### flight-level-simulations
