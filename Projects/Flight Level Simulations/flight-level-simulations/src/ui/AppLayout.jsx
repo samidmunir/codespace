@@ -4,6 +4,10 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 
 const StyledAppLayout = styled.div`
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    grid-template-rows: auto 1fr;
+    height: 100vh;
 `
 
 const Main = styled.main`

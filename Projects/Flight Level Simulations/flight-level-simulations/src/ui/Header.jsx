@@ -5,6 +5,7 @@ import {IoAirplane} from 'react-icons/io5'
 const StyledHeader = styled.header`
     background-color: var(--color-black-100);
     padding: 10px 20px;
+    border-bottom: 1px  solid var(--color-cobalt-blue-100);
 `
 
 const StyledH1 = styled.h1`
@@ -13,8 +14,8 @@ const StyledH1 = styled.h1`
 `
 
 const Icon = styled.span`
-    vertical-align: middle;
-    margin-left: 5px;
+    vertical-align: -5px;
+    margin-left: 10px;
 `
 
 const Header = () => {
