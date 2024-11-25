@@ -2,7 +2,7 @@ Sami Munir | sami.munir2001@gmail.com
 # codespace
 ## Data Structures & Algorithms
 ### Java Programming
-#### Dynamic Array
+- Dynamic Array
 ### C Programming
 ### Python Programming
 ## Leetcode Mastery

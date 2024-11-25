@@ -17,7 +17,7 @@ public class Dynamic_Array {
             capacity = initial_capacity;
             main = new int[capacity];
             used = 0 * BYTES_PER_ELEMENT;
-            available = (capacity - used) * BYTES_PER_ELEMENT;
+            available = capacity - used;
         } catch (Exception e) {
             System.out.println("An error occurred: " + e.getMessage());
         }
