@@ -21,12 +21,15 @@ class Aircraft:
         self.heading = heading
         self.trail = []
         self.last_trail_position = (self.x, self.y)
+        self.selected = False
     
     def draw(self, screen):
         left = self.x - (AIRCRAFT_WIDTH / 2)
         top = self.y - (AIRCRAFT_HEIGHT / 2)
         aircraft_rectangle = (left, top, AIRCRAFT_WIDTH, AIRCRAFT_HEIGHT)
         PG.draw.rect(surface = screen, color = AIRCRAFT_COLOR, rect = aircraft_rectangle)
+        if self.selected:
+            PG.draw.circle(screen, (255, 255, 0), (int(self.x), int(self.y)), 25, 2)
         self.draw_trail(screen)
     
     def move(self):
@@ -122,3 +125,7 @@ class Aircraft:
             blue = int(factor * 255)
             color = (red, 0, blue)
             PG.draw.circle(screen, color, (int(tx), int(ty)), 5)
+
+    def is_clicked(self, mouse_pos):
+        distance = MATH.sqrt((mouse_pos[0] - self.x) ** 2 + (mouse_pos[1] - self.y ) ** 2)
+        return distance < 20
