@@ -19,12 +19,15 @@ class Aircraft:
         self.speed = speed
         self.altitude = altitude
         self.heading = heading
+        self.trail = []
+        self.last_trail_position = (self.x, self.y)
     
     def draw(self, screen):
         left = self.x - (AIRCRAFT_WIDTH / 2)
         top = self.y - (AIRCRAFT_HEIGHT / 2)
         aircraft_rectangle = (left, top, AIRCRAFT_WIDTH, AIRCRAFT_HEIGHT)
         PG.draw.rect(surface = screen, color = AIRCRAFT_COLOR, rect = aircraft_rectangle)
+        self.draw_trail(screen)
     
     def move(self):
         if self.heading == 0 or self.heading == 360:
@@ -94,3 +97,28 @@ class Aircraft:
             self.x += self.speed * AIRCRAFT_SPEED_SCALAR
         else:
             pass
+        
+        trail_spacing = 15
+        dx = self.x - self.last_trail_position[0]
+        dy = self.y - self.last_trail_position[1]
+        distance = MATH.sqrt(dx ** 2 + dy ** 2)
+        
+        if distance > trail_spacing:
+            self.trail.append((self.x, self.y))
+            self.last_trail_position = (self.x, self.y)
+        if (len(self.trail) > 5000):
+            self.trail.pop(0)
+    
+    def draw_text(self, screen, text, font, color, offset = (0, -30)):
+        text_surface = font.render(text, True, color)
+        text_rect = text_surface.get_rect(center = (self.x + offset[0], self.y + offset[1]))
+        screen.blit(text_surface, text_rect)
+    
+    def draw_trail(self, screen):
+        for i, (tx, ty) in enumerate(self.trail):
+            factor = i / len(self.trail) if len(self.trail) > 0 else 0
+            
+            red = int((1 - factor) * 255)
+            blue = int(factor * 255)
+            color = (red, 0, blue)
+            PG.draw.circle(screen, color, (int(tx), int(ty)), 5)
