@@ -6,13 +6,29 @@ from config import (
     FPS,
     AIRCRAFT_WIDTH,
 )
+from waypoint import Waypoint
 from aircraft import Aircraft
+
+def parse_waypoints_data():
+    WAYPOINTS = []
+    with open('waypoints_2.txt', 'r') as file:
+        LINES = file.readlines()
+        for LINE in LINES:
+            data = LINE.strip().split(',')
+            name = data[0]
+            x = int(data[1])
+            y = int(data[2])
+            waypoint = Waypoint(name, x, y)
+            WAYPOINTS.append(waypoint)
+    return WAYPOINTS
 
 def main():
     PG.init()
     SCREEN = PG.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     PG.display.set_caption('Air Traffic Simulation')
     CLOCK = PG.time.Clock()
+    
+    WAYPOINTS = parse_waypoints_data()
     
     AIRCRAFTS = []
     
@@ -48,6 +64,9 @@ def main():
                     RUNNING = False
             if EVENT.type == PG.QUIT:
                 RUNNING = False
+        
+        for waypoint in WAYPOINTS:
+            waypoint.draw(screen = SCREEN)
         
         for aircraft in AIRCRAFTS:
             if aircraft.x < 0 or aircraft.x > SCREEN_WIDTH or aircraft.y < 0 or aircraft.y > SCREEN_HEIGHT:

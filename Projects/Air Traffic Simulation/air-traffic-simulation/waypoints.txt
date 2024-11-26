@@ -1,0 +1,7 @@
+Alpha, 400, 400
+Beta, 200, 800
+Charlie, 600, 200
+Delta, 300, 100
+Echo, 750, 600
+Foxtrot, 150, 300
+TEST, 1300, 800
