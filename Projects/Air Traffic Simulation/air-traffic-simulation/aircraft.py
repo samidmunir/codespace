@@ -15,7 +15,7 @@ PG.init()
 font = PG.font.Font(None, 18)
 
 class Aircraft:
-    def __init__(self, flight_number: str, type: str, x: float, y: float, speed: float, altitude: float, heading: float):
+    def __init__(self, flight_number: str, type: str, x: float, y: float, speed: float, altitude: float, heading: float, waypoints: list):
         self.flight_number = flight_number
         self.type = type
         self.x = x
@@ -23,13 +23,16 @@ class Aircraft:
         self.speed = speed
         self.altitude = altitude
         self.heading = heading
+        self.target_heading = heading
+        self.waypoints = waypoints
+        self.current_waypoint_index = 0
         self.trail = []
         self.last_trail_position = (self.x, self.y)
         self.selected = False
     
     def draw(self, screen, label_color):
         heading_vector_color = label_color
-        aircraft_label_1 = f'{self.flight_number} - {self.type}'
+        aircraft_label_1 = f'{self.flight_number} - {self.type} - {int(self.target_heading)}°'
         aircraft_label_2 = f'{self.speed}kts {self.altitude}ft'
         aircraft_label_3 = f'{int(self.heading)}°'
         self.draw_text(screen, aircraft_label_1, font, label_color, offset=(AIRCRAFT_WIDTH / 2, -60))
@@ -44,7 +47,11 @@ class Aircraft:
             PG.draw.circle(screen, (255, 255, 0), (int(self.x), int(self.y)), 25, 2)
         self.draw_trail(screen)
     
+    def snap_to_nearest_heading(self, heading):
+        return round(heading / 15) * 15
+    
     def move(self):
+        self.heading = self.snap_to_nearest_heading(self.heading)
         if self.heading == 0 or self.heading == 360:
             self.y -= self.speed * AIRCRAFT_SPEED_SCALAR
         elif self.heading == 15:
@@ -156,3 +163,55 @@ class Aircraft:
         end_y = start_y - MATH.cos(heading_radian) * AIRCRAFT_HEADING_VECTOR_LENGTH
         
         PG.draw.line(screen, color, (start_x, start_y), (end_x, end_y), 2)
+    
+    def calculate_target_heading(self, waypoint):
+        dx = waypoint.x - self.x
+        dy = waypoint.y - self.y
+        angle = MATH.degrees(MATH.atan2(dy, dx))
+        # rad_angle = MATH.radians(angle)
+        # print(f'\nangle: {angle} deg')
+        # print(f'radian angle: {rad_angle} rad')
+        print((angle + 360) % 360)
+        return (angle + 360) % 360
+    
+    def update_heading(self):
+        # target_heading = self.calculate_target_heading(self.waypoints[self.current_waypoint_index])
+        # diff = (target_heading - self.heading + 360) % 360
+        
+        # if diff > 180:
+        #     self.heading -= min(15, 360 - diff)
+        # else:
+        #     self.heading += min(15, diff)
+            
+        # self.heading %= 360
+        if self.current_waypoint_index >= len(self.waypoints):
+            return # no more waypoints to move toward.
+        
+        target_heading = self.calculate_target_heading(self.waypoints[self.current_waypoint_index])
+        self.target_heading = target_heading
+        diff = (target_heading - self.heading + 360) % 360
+        
+        if diff > 180:
+            self.heading -= min(15, 360 - diff)
+        else:
+            self.heading += min(15, diff)
+            
+        self.heading %= 360
+        
+    def move_toward_waypoint(self):
+        if self.current_waypoint_index >= len(self.waypoints):
+            return  # Route is complete
+
+        # Update the heading to align with the current waypoint
+        self.update_heading()
+
+        # Move the aircraft based on the current heading
+        rad = MATH.radians(self.heading)
+        self.x += MATH.cos(rad) * self.speed * AIRCRAFT_SPEED_SCALAR
+        self.y += MATH.sin(rad) * self.speed * AIRCRAFT_SPEED_SCALAR
+
+        # Check if the aircraft has reached the current waypoint
+        current_waypoint = self.waypoints[self.current_waypoint_index]
+        distance = MATH.sqrt((self.x - current_waypoint.x) ** 2 + (self.y - current_waypoint.y) ** 2)
+        if distance < 10:  # Threshold for waypoint arrival
+            self.current_waypoint_index += 1  # Move to the next waypoint
