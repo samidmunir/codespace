@@ -1,4 +1,5 @@
 import pygame as PG
+import math as MATH
 
 from config import (
     WAYPOINT_SIZE,
@@ -21,3 +22,7 @@ class Waypoint:
         text_surface = font.render(self.name, True, (0, 255, 255))
         text_rect = text_surface.get_rect(center = (self.x, self.y - 30))
         screen.blit(text_surface, text_rect)
+        
+    def is_clicked(self, mouse_pos):
+        distance = MATH.sqrt((mouse_pos[0] - self.x) ** 2 + (mouse_pos[1] - self.y) ** 2)
+        return distance <= 20
