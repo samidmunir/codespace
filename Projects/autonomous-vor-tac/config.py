@@ -1,4 +1,5 @@
 # General configuration
+FPS = 120
 
 # Screen configuration
 SCREEN_WIDTH = 1300
@@ -13,6 +14,8 @@ VORTAC_COLOR = (0, 153, 51)
 
 # Aircraft configuration
 AIRCRAFT_SIZE = 10
-AIRCRAFT_HEADING_VECTOR_LENGTH = 25
+AIRCRAFT_HEADING_VECTOR_LENGTH = 50
+MAX_NUMBER_AIRCRAFTS = 2
 
 # Waypoint configuration
+WAYPOINT_SIZE = 7
