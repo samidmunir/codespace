@@ -4,7 +4,9 @@ from config import (
     AIRCRAFT_SIZE,
     AIRCRAFT_HEADING_VECTOR_LENGTH,
     AIRCRAFT_EXTENDED_HEADING_VECTOR_LENGTH,
-    AIRCRAFT_TURN_RATE
+    AIRCRAFT_TURN_RATE,
+    SCREEN_WIDTH,
+    SCREEN_HEIGHT
 )
 
 PG.init()
@@ -16,8 +18,10 @@ class Aircraft:
         self.x = x
         self.y = y
         self.current_speed = speed
-        self.max_speed = 0.0575
-        self.min_speed = 0.02
+        # self.max_speed = 0.0575
+        # self.min_speed = 0.02
+        self.max_speed = speed * 0.00200 # 1.4375 1.5
+        self.min_speed = speed * 0.00075
         self.heading = heading
         self.target_heading = heading
         self.turn_rate = AIRCRAFT_TURN_RATE
@@ -25,6 +29,9 @@ class Aircraft:
         self.trail = []
         self.last_trail_position = (self.x, self.y)
         self.target_waypoint = None
+        self.manual_override = False
+        self.fly_route = False
+        self.route_queue = []
         self.selected = False
     
     def draw(self, screen):
@@ -32,8 +39,9 @@ class Aircraft:
         self.draw_heading_vector(screen, (0, 255, 0))
         self.draw_trail(screen = screen)
         font = PG.font.Font(None, 18)
-        text_1 = f'{self.name}'
-        text_2 = f'{int(self.current_speed)}kts | {int(self.heading)}'
+        target_waypoint_label = 'N/A' if not self.target_waypoint else self.target_waypoint.name
+        text_1 = f'{self.name} -> {target_waypoint_label}'
+        text_2 = f'{int(self.current_speed)}kts | {int(self.heading)}°'
         text_surface_1 = font.render(text_1, True, (0, 255, 0))
         text_surface_2 = font.render(text_2, True, (0, 255, 0))
         text_rect_1 = text_surface_1.get_rect(center = (self.x, self.y - 35))
@@ -63,26 +71,54 @@ class Aircraft:
             PG.draw.line(screen, (255, 255, 255), (start_x, start_y), (end_x, end_y), 1)
     
     def draw_trail(self, screen):
+    # Initialize a persistent trail surface once
+        if not hasattr(self, "trail_surface"):
+            self.trail_surface = PG.Surface((screen.get_width(), screen.get_height()), PG.SRCALPHA)
+            self.trail_surface.fill((0, 0, 0, 0))  # Fully transparent background
+
+        # Fade out the trail over time for a smooth effect
+        self.trail_surface.fill((0, 0, 0, 10), special_flags=PG.BLEND_RGBA_MULT)
+
+        # Draw the current trail points onto the trail surface
         for i, (tx, ty) in enumerate(self.trail):
             factor = i / len(self.trail) if len(self.trail) > 0 else 0
             red = int((1 - factor) * 255)
             blue = int(factor * 255)
-            color = (red, 0, blue)
-            PG.draw.circle(screen, color, (int(tx), int(ty)), 5)
-        
+            alpha = int((1 - factor) * 128)  # Adjust alpha for transparency
+            color = (red, 0, blue, alpha)
+            PG.draw.circle(self.trail_surface, color, (int(tx), int(ty)), 5)
+
+        # Blit the trail surface onto the main screen
+        screen.blit(self.trail_surface, (0, 0))
+          
     def is_clicked(self, mouse_pos):
         distance = MATH.sqrt((mouse_pos[0] - self.x) ** 2 + (mouse_pos[1] - self.y) ** 2)
         return distance <= 20
+
+    def is_out_of_bounds(self):
+        return (
+            self.x < 0 or self.x > SCREEN_WIDTH or
+            self.y < 0 or self.y > SCREEN_HEIGHT
+        )
     
     def update_target_heading_to_waypoint(self):
-        dx = self.target_waypoint.x - self.x
-        dy = self.target_waypoint.y - self.y
-        target_angle = MATH.degrees(MATH.atan2(-dy, dx))
-        self.target_heading = (90 - target_angle) % 360
+        if self.target_waypoint:
+            dx = self.target_waypoint.x - self.x
+            dy = self.target_waypoint.y - self.y
+            target_angle = MATH.degrees(MATH.atan2(-dy, dx))  # Negative dy to account for Pygame's inverted y-axis
+            self.target_heading = (90 - target_angle) % 360
+
+            # Check if the aircraft has reached the waypoint
+            if self.is_at_waypoint():
+                print(f'{self.name} reached waypoint {self.target_waypoint.name}')
+                self.target_waypoint = None
+                self.manual_override = False  # Allow manual override after reaching waypoint
         
     def is_at_waypoint(self):
-        distance = MATH.sqrt((self.x - self.target_waypoint.x) ** 2 + (self.y - self.target_waypoint.y) ** 2)
-        return distance < 2.5
+        if not self.target_waypoint:
+            return False
+        distance = MATH.sqrt((self.x - self.target_waypoint.x)**2 + (self.y - self.target_waypoint.y)**2)
+        return distance < 2.5  # Adjust threshold for precision
     
     def update_position(self):
         rad_heading = MATH.radians(90 - self.heading)
@@ -96,21 +132,45 @@ class Aircraft:
             self.target_waypoint = None
     
     def move(self):
-        if self.target_waypoint:
+        if self.fly_route and self.route_queue:
+            self.target_waypoint = self.route_queue[0]
             self.update_target_heading_to_waypoint()
-        self.smooth_turn()
+            self.smooth_turn()
+            
+            if self.is_at_waypoint():
+                self.route_queue.pop(0)
+                
+                if not self.route_queue or len(self.route_queue) == 0:
+                    self.fly_route = False
+        elif self.manual_override:
+            self.smooth_turn()
+        elif self.target_waypoint:
+            self.update_target_heading_to_waypoint()
+            self.smooth_turn()
+        else:
+            self.smooth_turn()
+        
         self.update_position()
         
-        angle_diff = abs((self.target_heading - self.heading) % 360)
-        if angle_diff > 180:
-            angle_diff = 360 - angle_diff
-        speed = self.max_speed - ((self.max_speed - self.min_speed) * (angle_diff / 180))
+        # if self.manual_override and self.target_waypoint == None:
+        #     self.smooth_turn()
+        # elif self.target_waypoint:
+        #     self.update_target_heading_to_waypoint()
+        #     self.smooth_turn()
+        # else:
+        #     self.smooth_turn()
+        # self.update_position()
         
-        rad_heading = MATH.radians(90 - self.heading)
-        dx = MATH.cos(rad_heading) * speed
-        dy = -MATH.sin(rad_heading) * speed
-        self.x += dx
-        self.y += dy
+        # angle_diff = abs((self.target_heading - self.heading) % 360)
+        # if angle_diff > 180:
+        #     angle_diff = 360 - angle_diff
+        # speed = self.max_speed - ((self.max_speed - self.min_speed) * (angle_diff / 180))
+        
+        # rad_heading = MATH.radians(90 - self.heading)
+        # dx = MATH.cos(rad_heading) * speed
+        # dy = -MATH.sin(rad_heading) * speed
+        # self.x += dx
+        # self.y += dy
         
         trail_spacing = 10
         tx = self.x - self.last_trail_position[0]
@@ -119,7 +179,7 @@ class Aircraft:
         if t_distance > trail_spacing:
             self.trail.append((self.x, self.y))
             self.last_trail_position = (self.x, self.y)
-        if len(self.trail) > 1000:
+        if len(self.trail) > 100:
             self.trail.pop(0)
         
     def smooth_turn(self):

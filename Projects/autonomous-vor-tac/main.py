@@ -381,6 +381,10 @@ from config import (
 from vortac import Vortac
 from waypoint import Waypoint
 from aircraft import Aircraft
+from route_network import (
+    generate_route_network,
+    draw_routes
+)
 
 
 class InputBox:
@@ -415,22 +419,19 @@ class InputBox:
         screen.blit(txt_surface, (self.rect.x + 5, self.rect.y + 5))
         PG.draw.rect(screen, self.color, self.rect, 2)
 
-
 def generate_random_aircraft_name() -> str:
     LENGTH = RANDOM.randint(2, 3)
     NAME = ''.join(RANDOM.choice(STRING.ascii_letters) for _ in range(LENGTH))
     NAME += str(RANDOM.randint(1, 1000))
     return NAME
 
-
 def gen_random_aircraft() -> Aircraft:
     name = generate_random_aircraft_name()
     x = RANDOM.randint(50, SCREEN_WIDTH - 50)
     y = RANDOM.randint(50, SCREEN_HEIGHT - 50)
-    speed = RANDOM.randint(150, 350)  # Initialize speed in knots
+    speed = RANDOM.randint(100, 450)  # Initialize speed in knots
     heading = RANDOM.randint(0, 360)
     return Aircraft(name=name.upper(), x=x, y=y, speed=speed, heading=heading)
-
 
 def get_waypoints(filename: str) -> list:
     waypoints = []
@@ -440,7 +441,6 @@ def get_waypoints(filename: str) -> list:
             waypoint = Waypoint(name=name, x=float(x), y=float(y))
             waypoints.append(waypoint)
     return waypoints
-
 
 # def main() -> None:
 #     PG.init()
@@ -520,9 +520,36 @@ def main() -> None:
 
     VORTAC = Vortac(name='S147', x=VORTAC_POS_X, y=VORTAC_POS_Y, radius=VORTAC_RADIUS, sweep_angle=0.0, sweep_speed=0.25)
     sub_vortac_a = Vortac(name='RD992', x=400, y=400, radius=150, sweep_angle=0.0, sweep_speed=0.10)
-    WAYPOINTS = get_waypoints('waypoints_config.txt')
-    AIRCRAFTS = [gen_random_aircraft() for _ in range(MAX_NUMBER_AIRCRAFTS)]
+    sub_vortac_b = Vortac(name = 'XYZ', x = 800, y = 200, radius = 175, sweep_angle = 0.0, sweep_speed = 0.50)
+    WAYPOINTS = get_waypoints('waypoints_config_2.txt')
+    NETWORK_GRAPH = generate_route_network(waypoints = WAYPOINTS, max_distance = 50)
+    # AIRCRAFTS = [gen_random_aircraft() for _ in range(MAX_NUMBER_AIRCRAFTS)]
+    AIRCRAFTS = []
     INPUT_BOX = InputBox(INPUT_BOX_X, INPUT_BOX_Y, INPUT_BOX_WIDTH, INPUT_BOX_HEIGHT)
+    
+    test_ac_1 = Aircraft(name = 'Test 1', x = 25, y = 150, speed = 100, heading = 90)
+    test_ac_2 = Aircraft(name = 'Test 2', x = 25, y = 200, speed = 150, heading = 90)
+    test_ac_3 = Aircraft(name = 'Test 3', x = 25, y = 250, speed = 200, heading = 90)
+    test_ac_4 = Aircraft(name = 'Test 4', x = 25, y = 300, speed = 250, heading = 90)
+    test_ac_5 = Aircraft(name = 'Test 5', x = 25, y = 350, speed = 300, heading = 90)
+    test_ac_6 = Aircraft(name = 'Test 6', x = 25, y = 400, speed = 350, heading = 90)
+    test_ac_7 = Aircraft(name = 'Test 7', x = 25, y = 450, speed = 400, heading = 90)
+    test_ac_8 = Aircraft(name = 'Test 8', x = 25, y = 500, speed = 450, heading = 90)
+    test_ac_9 = Aircraft(name = 'Test 9', x = 25, y = 550, speed = 500, heading = 90)
+    test_ac_10 = Aircraft(name = 'Test 10', x = 25, y = 600, speed = 550, heading = 90)
+    test_ac_11 = Aircraft(name = 'Test 11', x = 25, y = 650, speed = 600, heading = 90)
+    
+    AIRCRAFTS.append(test_ac_1)
+    AIRCRAFTS.append(test_ac_2)
+    AIRCRAFTS.append(test_ac_3)
+    AIRCRAFTS.append(test_ac_4)
+    AIRCRAFTS.append(test_ac_5)
+    # AIRCRAFTS.append(test_ac_6)
+    # AIRCRAFTS.append(test_ac_7)
+    # AIRCRAFTS.append(test_ac_8)
+    # AIRCRAFTS.append(test_ac_9)
+    # AIRCRAFTS.append(test_ac_10)
+    # AIRCRAFTS.append(test_ac_11)
 
     input_box_visible = False  # Flag to control InputBox visibility
     running = True
@@ -541,6 +568,8 @@ def main() -> None:
                         selected_aircraft = next((a for a in AIRCRAFTS if a.selected), None)
                         if selected_aircraft:
                             selected_aircraft.target_heading = new_heading
+                            selected_aircraft.manual_override = True
+                            selected_aircraft.target_waypoint = None
                             print(f"Aircraft {selected_aircraft.name} assigned heading {new_heading}°")
                     except ValueError:
                         print("Invalid heading entered. Please enter a number.")
@@ -576,6 +605,7 @@ def main() -> None:
                     if waypoint.is_clicked(mouse_pos):
                         if selected_aircraft:
                             selected_aircraft.target_waypoint = waypoint
+                            aircraft.manual_override = False
                             print(f"Aircraft {selected_aircraft.name} assigned to waypoint {waypoint.name}")
                         waypoint_clicked = True
                         break
@@ -586,15 +616,20 @@ def main() -> None:
                         aircraft.selected = False
                     input_box_visible = False  # Hide InputBox when clicking empty space
                     print("All aircraft deselected")
-
+        
+        AIRCRAFTS = [aircraft for aircraft in AIRCRAFTS if not aircraft.is_out_of_bounds()]
+    
         SCREEN.fill(BACKGROUND_COLOR)
         VORTAC.draw(screen=SCREEN)
         sub_vortac_a.draw(screen=SCREEN)
+        sub_vortac_b.draw(screen=SCREEN)
         for waypoint in WAYPOINTS:
             waypoint.draw(screen=SCREEN)
         for aircraft in AIRCRAFTS:
             aircraft.move()
             aircraft.draw(screen=SCREEN)
+        
+        draw_routes(screen = SCREEN, waypoints = WAYPOINTS, graph = NETWORK_GRAPH)
 
         # Draw InputBox only if visible
         if input_box_visible:
@@ -604,6 +639,122 @@ def main() -> None:
         CLOCK.tick(FPS)
 
     PG.quit()
+
+
+# def main() -> None:
+#     PG.init()
+#     SCREEN = PG.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+#     PG.display.set_caption("Autonomous VOR-TAC")
+#     CLOCK = PG.time.Clock()
+
+#     VORTAC = Vortac(name="S147", x=VORTAC_POS_X, y=VORTAC_POS_Y, radius=VORTAC_RADIUS, sweep_angle=0.0, sweep_speed=0.25)
+#     WAYPOINTS = get_waypoints("waypoints_config.txt")
+#     NETWORK_GRAPH = generate_route_network(waypoints=WAYPOINTS, max_distance=200)
+#     AIRCRAFTS = [gen_random_aircraft() for _ in range(MAX_NUMBER_AIRCRAFTS)]
+#     INPUT_BOX = InputBox(INPUT_BOX_X, INPUT_BOX_Y, INPUT_BOX_WIDTH, INPUT_BOX_HEIGHT)
+
+#     input_box_visible = False
+#     running = True
+
+#     while running:
+#         for event in PG.event.get():
+#             if event.type == PG.QUIT:
+#                 running = False
+
+#             # Handle InputBox events
+#             if input_box_visible and INPUT_BOX.rect.collidepoint(PG.mouse.get_pos()):
+#                 entered_text = INPUT_BOX.handle_event(event)
+#                 if entered_text:
+#                     try:
+#                         new_heading = float(entered_text)
+#                         selected_aircraft = next((a for a in AIRCRAFTS if a.selected), None)
+#                         if selected_aircraft:
+#                             selected_aircraft.target_heading = new_heading
+#                             selected_aircraft.manual_override = True
+#                             selected_aircraft.target_waypoint = None
+#                             selected_aircraft.fly_route = False
+#                             print(f"Aircraft {selected_aircraft.name} assigned heading {new_heading}°")
+#                     except ValueError:
+#                         print("Invalid heading entered. Please enter a number.")
+#                     input_box_visible = False  # Hide InputBox after pressing Enter
+#                 continue  # Skip other processing if the InputBox is active
+
+#             # Check for mouse click events
+#             if event.type == PG.MOUSEBUTTONDOWN:
+#                 mouse_pos = PG.mouse.get_pos()
+#                 right_click = event.button == 3  # Right mouse button
+
+#                 # Handle InputBox visibility: hide if clicking outside
+#                 if input_box_visible and not INPUT_BOX.rect.collidepoint(mouse_pos):
+#                     input_box_visible = False
+#                     continue
+
+#                 # Check for aircraft selection
+#                 aircraft_clicked = False
+#                 for aircraft in AIRCRAFTS:
+#                     if aircraft.is_clicked(mouse_pos):
+#                         # Select the clicked aircraft and deselect others
+#                         for a in AIRCRAFTS:
+#                             a.selected = False
+#                         aircraft.selected = True
+#                         input_box_visible = True  # Show InputBox when an aircraft is selected
+#                         print(f"Aircraft {aircraft.name} selected")
+#                         aircraft_clicked = True
+#                         break
+
+#                 # If no aircraft is clicked, check for waypoint selection
+#                 selected_aircraft = next((a for a in AIRCRAFTS if a.selected), None)
+#                 waypoint_clicked = False
+#                 for waypoint in WAYPOINTS:
+#                     if waypoint.is_clicked(mouse_pos):
+#                         if selected_aircraft:
+#                             if right_click:
+#                                 # Assign the waypoint's route to the selected aircraft
+#                                 selected_aircraft.route_queue = [
+#                                     Waypoint(name, *NETWORK_GRAPH[name])
+#                                     for name, _ in NETWORK_GRAPH[waypoint.name]
+#                                 ]
+#                                 selected_aircraft.fly_route = True
+#                                 selected_aircraft.manual_override = False
+#                                 print(f"Aircraft {selected_aircraft.name} assigned to fly route from {waypoint.name}")
+#                             else:
+#                                 # Assign single waypoint
+#                                 selected_aircraft.target_waypoint = waypoint
+#                                 selected_aircraft.fly_route = False
+#                                 selected_aircraft.manual_override = False
+#                                 print(f"Aircraft {selected_aircraft.name} assigned to waypoint {waypoint.name}")
+#                         waypoint_clicked = True
+#                         break
+
+#                 # If neither an aircraft nor a waypoint is clicked, deselect all
+#                 if not aircraft_clicked and not waypoint_clicked:
+#                     for aircraft in AIRCRAFTS:
+#                         aircraft.selected = False
+#                     input_box_visible = False  # Hide InputBox when clicking empty space
+#                     print("All aircraft deselected")
+
+#         # Remove out-of-bounds aircraft
+#         AIRCRAFTS = [aircraft for aircraft in AIRCRAFTS if not aircraft.is_out_of_bounds()]
+
+#         SCREEN.fill(BACKGROUND_COLOR)
+#         VORTAC.draw(screen=SCREEN)
+#         for waypoint in WAYPOINTS:
+#             waypoint.draw(screen=SCREEN)
+#         for aircraft in AIRCRAFTS:
+#             aircraft.move()
+#             aircraft.draw(screen=SCREEN)
+
+#         draw_routes(screen=SCREEN, waypoints=WAYPOINTS, graph=NETWORK_GRAPH)
+
+#         # Draw InputBox only if visible
+#         if input_box_visible:
+#             INPUT_BOX.draw(screen=SCREEN)
+
+#         PG.display.flip()
+#         CLOCK.tick(FPS)
+
+#     PG.quit()
+
 
 if __name__ == '__main__':
     main()
